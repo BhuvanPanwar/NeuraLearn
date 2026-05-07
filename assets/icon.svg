@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <!-- Background -->
+  <rect width="1024" height="1024" rx="200" fill="#FF6B35"/>
+
+  <!-- Cylinder body -->
+  <rect x="340" y="280" width="344" height="480" rx="40" fill="white" opacity="0.95"/>
+
+  <!-- Cylinder top dome -->
+  <ellipse cx="512" cy="280" rx="172" ry="60" fill="white" opacity="0.95"/>
+
+  <!-- Cylinder valve / nozzle -->
+  <rect x="472" y="200" width="80" height="100" rx="16" fill="#FFD9B3"/>
+  <rect x="460" y="190" width="104" height="30" rx="10" fill="#FF8C42"/>
+
+  <!-- Gas flame inside cylinder (orange glow) -->
+  <ellipse cx="512" cy="600" rx="90" ry="110" fill="#FF8C42" opacity="0.3"/>
+
+  <!-- Flame shape -->
+  <path d="M512 480 C460 520 440 570 460 620 C470 650 490 665 512 665 C534 665 554 650 564 620 C584 570 564 520 512 480Z" fill="#FF6B35"/>
+  <path d="M512 510 C488 540 480 570 492 600 C498 618 505 625 512 625 C519 625 526 618 532 600 C544 570 536 540 512 510Z" fill="#FFD040"/>
+
+  <!-- Brand name text -->
+  <text x="512" y="800" font-family="Arial, sans-serif" font-size="72" font-weight="800" fill="#FF6B35" text-anchor="middle">Cylinder</text>
+  <text x="512" y="880" font-family="Arial, sans-serif" font-size="72" font-weight="800" fill="#FF6B35" text-anchor="middle">Sathi</text>
+
+  <!-- Decorative dots (signal bars — connectivity indicator) -->
+  <circle cx="340" cy="870" r="18" fill="white" opacity="0.6"/>
+  <circle cx="390" cy="850" r="18" fill="white" opacity="0.8"/>
+  <circle cx="440" cy="825" r="18" fill="white"/>
+</svg>
