@@ -11,7 +11,6 @@ import { getStrings } from '../constants/languages';
 import { ACTIVITY_CONFIG, CONSUMPTION_PER_ACTIVITY } from '../constants/gasProfiles';
 import { saveDayLog, getDayLog } from '../utils/storage';
 import { todayKey } from '../utils/gasCalculator';
-import { pushDayLogToCloud } from '../services/syncService';
 
 // Simple voice command parser — maps spoken words to activity IDs
 function parseVoiceToActivities(text, lang) {
@@ -95,7 +94,6 @@ export default function DailyLogScreen({ route }) {
   async function handleSave() {
     const log = { activities: selected, note };
     await saveDayLog(dateKey, log);
-    pushDayLogToCloud(dateKey, log).catch(() => {}); // non-blocking cloud sync
     setSaved(true);
     Speech.speak(
       lang === 'hi' ? 'खाना लॉग हो गया!' : 'Cooking logged!',

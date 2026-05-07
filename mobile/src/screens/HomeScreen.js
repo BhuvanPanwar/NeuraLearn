@@ -7,7 +7,6 @@ import { useFocusEffect } from '@react-navigation/native';
 
 import GasGauge    from '../components/GasGauge';
 import BookingSheet from '../components/BookingSheet';
-import AdBanner    from '../components/AdBanner';
 import { getStrings } from '../constants/languages';
 import {
   getUserProfile, getCurrentCylinder, getDailyLogs,
@@ -18,7 +17,6 @@ import {
   getEstimatedCylinderDays, computeHistoricalAverage,
 } from '../utils/gasCalculator';
 import { scheduleLowGasAlert, scheduleBookingReminder } from '../utils/notifications';
-import { pushCurrentCylinderToCloud, pushCylinderHistoryToCloud } from '../services/syncService';
 
 const URGENCY_STYLES = {
   safe:     { bg: '#E8F5E9', border: '#4CAF50', text: '#2E7D32' },
@@ -82,7 +80,6 @@ export default function HomeScreen({ navigation, route }) {
             const finished = { ...cylinder, endDate: new Date().toISOString() };
             await addCylinderToHistory(finished);
             await clearCurrentCylinder();
-            pushCylinderHistoryToCloud(finished).catch(() => {});
             setCylinder(null);
             setRemaining(0);
             setDaysLeft(0);
@@ -196,9 +193,6 @@ export default function HomeScreen({ navigation, route }) {
             <Text style={styles.quickLogArrow}>›</Text>
           </TouchableOpacity>
         )}
-
-        {/* Ad Banner */}
-        <AdBanner />
 
       </ScrollView>
 
