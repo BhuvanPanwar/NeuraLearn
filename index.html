@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="CylinderSathi">
+<title>CylinderSathi - आपका गैस साथी</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#FFF8F0;min-height:100vh;display:flex;flex-direction:column;max-width:430px;margin:0 auto;position:relative;}
+.screen{flex:1;overflow-y:auto;padding:20px 16px 80px;display:none;}
+.screen.active{display:block;}
+.app-name{font-size:26px;font-weight:800;color:#FF6B35;}
+.tagline{font-size:13px;color:#888;margin-top:4px;}
+.card{background:#FFF;border-radius:16px;padding:16px;margin-bottom:12px;border:1px solid #FFD9B3;width:100%;}
+.card-title{font-size:15px;font-weight:700;color:#555;}
+.primary-btn{background:#FF6B35;border:none;border-radius:14px;padding:16px;width:100%;color:#FFF;font-size:16px;font-weight:700;cursor:pointer;margin-bottom:12px;}
+.outline-btn{background:#FFF;border:1.5px solid #FFD9B3;border-radius:14px;padding:16px;width:100%;color:#666;font-size:14px;font-weight:600;cursor:pointer;}
+.small-btn{background:#FF6B35;border:none;border-radius:10px;padding:8px 14px;color:#FFF;font-size:13px;font-weight:700;cursor:pointer;}
+.row{display:flex;gap:12px;margin-bottom:12px;}
+.row .primary-btn,.row .outline-btn{flex:1;margin-bottom:0;}
+.num-chip{width:44px;height:44px;border-radius:22px;border:1.5px solid #FFD9B3;background:#FFF;display:flex;align-items:center;justify-content:center;font-size:16px;color:#666;font-weight:600;cursor:pointer;}
+.num-chip.on{border-color:#FF6B35;background:#FFF0E6;color:#FF6B35;font-weight:800;}
+.chips{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-top:12px;}
+.gauge-outer{width:200px;height:200px;border-radius:50%;background:#FFF0E6;border:3px solid #FFD9B3;display:flex;align-items:center;justify-content:center;margin:20px auto;}
+.gauge-inner{width:160px;height:160px;border-radius:50%;background:#FFF8F0;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+.gauge-pct{font-size:52px;font-weight:900;line-height:1;}
+.gauge-label{font-size:12px;color:#888;margin-top:2px;}
+.gauge-badge{border-radius:20px;padding:4px 12px;margin-top:6px;border:1px solid;font-size:13px;font-weight:700;}
+.gauge-bar-wrap{width:80%;height:16px;background:#F0E0D0;border-radius:8px;margin:16px auto 0;overflow:hidden;}
+.gauge-bar{height:100%;border-radius:8px;}
+.activity-grid{display:flex;flex-wrap:wrap;gap:12px;}
+.act-card{width:calc(50% - 6px);background:#FFF;border-radius:16px;padding:14px;text-align:center;border:2px solid #FFD9B3;cursor:pointer;}
+.act-icon{font-size:32px;display:block;margin-bottom:4px;}
+.act-name{font-size:14px;font-weight:500;color:#555;}
+.act-g{font-size:11px;color:#BBB;margin-top:2px;}
+.hist-card{display:flex;gap:8px;padding:14px;}
+.hist-bar{width:4px;background:#FF6B35;border-radius:2px;}
+.modal-bg{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.4);z-index:100;align-items:flex-end;}
+.modal-bg.open{display:flex;}
+.modal-box{background:#FFF8F0;border-radius:24px 24px 0 0;padding:24px;padding-bottom:40px;width:100%;max-width:430px;margin:0 auto;}
+.modal-input{width:100%;background:#FFF;border-radius:12px;border:1px solid #FFD9B3;padding:14px;font-size:16px;margin-bottom:16px;}
+.navbar{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;display:flex;background:#FFF8F0;border-top:1px solid #FFD9B3;padding:4px 0 8px;}
+.nav-item{flex:1;display:flex;flex-direction:column;align-items:center;padding:6px;cursor:pointer;border:none;background:none;}
+.nav-icon{font-size:22px;opacity:0.5;}
+.nav-item.active .nav-icon{font-size:26px;opacity:1;}
+.nav-label{font-size:11px;color:#999;font-weight:400;margin-top:2px;}
+.nav-item.active .nav-label{color:#FF6B35;font-weight:700;}
+.booking-row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #F0F0F0;}
+</style>
+</head>
+<body>
+<div class="screen active" id="screen-onboard">
+  <div style="text-align:center;padding:24px 0;">
+    <div style="font-size:64px;margin-bottom:8px;">🪹</div>
+    <div class="app-name">CylinderSathi</div>
+    <div class="tagline">आपका गैस साथी • Your Gas Companion</div>
+  </div>
+  <div class="card">
+    <div class="card-title">👨‍👩‍👧 घर में कितने लोग? / Family Size</div>
+    <div class="chips" id="family-chips"></div>
+    <div style="text-align:center;color:#888;margin-top:12px;font-size:13px;" id="est-days-text"></div>
+  </div>
+  <button class="primary-btn" onclick="goHome()">🚀 शुरू करें / Get Started</button>
+</div>
+<div class="screen" id="screen-home">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+    <div><div class="app-name">CylinderSathi</div><div style="font-size:12px;color:#888;">🇮🇳 आपका गैस साथी</div></div>
+    <button class="small-btn" onclick="startCylinder()">+ New Cylinder</button>
+  </div>
+  <div id="home-no-cylinder" style="text-align:center;padding:40px 0;">
+    <div style="font-size:72px;">🪹</div>
+    <div style="font-size:18px;color:#888;margin-bottom:20px;font-weight:600;">No active cylinder</div>
+    <button class="primary-btn" onclick="startCylinder()">+ Start New Cylinder</button>
+  </div>
+  <div id="home-cylinder" style="display:none;">
+    <div class="gauge-outer"><div class="gauge-inner"><div class="gauge-pct" id="gauge-pct">--</div><div class="gauge-label">Gas Remaining</div><div class="gauge-badge" id="gauge-badge">-- दिन / days</div></div></div>
+    <div class="gauge-bar-wrap"><div class="gauge-bar" id="gauge-bar"></div></div>
+    <div class="card" id="urgency-card" style="margin-top:16px;"><div id="urgency-msg" style="font-weight:700;text-align:center;font-size:15px;"></div></div>
+    <div class="card"><div class="card-title">📅 सिलेंडर शुरू / Started</div><div style="color:#333;margin-top:4px;" id="cylinder-start-date"></div></div>
+    <div class="row">
+      <button class="primary-btn" onclick="showBooking()">📞 Book Now</button>
+      <button class="outline-btn" onclick="emptyCylinder()">Cylinder Empty</button>
+    </div>
+    <div class="card" onclick="goto('log')" style="display:flex;align-items:center;gap:12px;cursor:pointer;">
+      <div style="font-size:32px;">🍳</div>
+      <div style="flex:1;"><div style="font-size:16px;font-weight:700;color:#333;">आज का खाना / Today's Log</div><div style="font-size:13px;color:#999;">Tap to log your cooking</div></div>
+      <div style="font-size:28px;color:#FF6B35;">›</div>
+    </div>
+  </div>
+</div>
+<div class="screen" id="screen-log">
+  <div class="app-name" style="font-size:20px;">🍳 आज का खाना / Today's Log</div>
+  <div style="color:#888;margin-bottom:16px;" id="today-date"></div>
+  <div class="card" onclick="openTypeModal()" style="cursor:pointer;">
+    <div style="display:flex;align-items:center;gap:12px;"><div style="font-size:28px;">🎤</div><div><div style="font-size:15px;font-weight:700;color:#333;">Type what you cooked</div><div style="font-size:12px;color:#999;font-style:italic;">e.g. "tea breakfast lunch"</div></div></div>
+  </div>
+  <div style="font-size:16px;font-weight:700;color:#333;margin:12px 0;">Or tap what you cooked:</div>
+  <div class="activity-grid" id="activity-grid"></div>
+  <div id="usage-box" style="display:none;background:#FFF0E6;border-radius:14px;padding:16px;margin-top:16px;text-align:center;">
+    <div style="color:#888;font-size:13px;">Today's estimated usage</div>
+    <div style="font-size:28px;font-weight:800;color:#FF6B35;" id="usage-g">0g LPG</div>
+  </div>
+</div>
+<div class="screen" id="screen-history">
+  <div class="app-name" style="font-size:22px;margin-bottom:16px;">📋 इतिहास / History</div>
+  <div id="curr-cylinder-hist"></div>
+  <div id="history-empty" style="text-align:center;padding:60px 0;"><div style="font-size:56px;">📋</div><div style="font-size:16px;color:#888;margin-top:12px;">No history yet.<br>Start your first cylinder!</div></div>
+  <div id="history-list"></div>
+</div>
+<div class="screen" id="screen-settings">
+  <div class="app-name" style="font-size:22px;margin-bottom:16px;">⚙️ Settings</div>
+  <div class="card"><div class="card-title">👨‍👩‍👧 Family Size</div><div class="chips" id="family-chips-settings" style="justify-content:flex-start;margin-top:10px;"></div><div style="color:#888;margin-top:10px;font-size:13px;" id="settings-est-days"></div></div>
+  <div class="card"><div class="card-title">📞 Booking Numbers</div><div class="booking-row"><span style="font-weight:600;color:#333;">Indane</span><span style="color:#FF6B35;font-weight:700;">8454955555</span></div><div class="booking-row"><span style="font-weight:600;color:#333;">HP Gas</span><span style="color:#FF6B35;font-weight:700;">9222201122</span></div><div class="booking-row" style="border:none;"><span style="font-weight:600;color:#333;">Bharat Gas</span><span style="color:#FF6B35;font-weight:700;">7715012345</span></div></div>
+  <div class="card" style="text-align:center;"><div style="font-size:14px;color:#AAA;">CylinderSathi v1.0</div><div style="font-size:13px;color:#AAA;margin-top:4px;">🇮🇳 Built for 300 million Indian homes</div></div>
+</div>
+<div class="navbar">
+  <button class="nav-item active" id="nav-home" onclick="goto('home')"><span class="nav-icon">🏠</span><span class="nav-label">Home</span></button>
+  <button class="nav-item" id="nav-log" onclick="goto('log')"><span class="nav-icon">🍳</span><span class="nav-label">Log</span></button>
+  <button class="nav-item" id="nav-history" onclick="goto('history')"><span class="nav-icon">📋</span><span class="nav-label">History</span></button>
+  <button class="nav-item" id="nav-settings" onclick="goto('settings')"><span class="nav-icon">⚙️</span><span class="nav-label">Settings</span></button>
+</div>
+<div class="modal-bg" id="type-modal">
+  <div class="modal-box">
+    <div style="font-size:18px;font-weight:800;margin-bottom:12px;">What did you cook today?</div>
+    <input class="modal-input" id="type-input" placeholder="tea breakfast lunch dinner..." />
+    <div class="row" style="margin:0;"><button class="outline-btn" onclick="closeTypeModal()">Cancel</button><button class="primary-btn" style="margin:0;" onclick="submitType()">OK ✓</button></div>
+  </div>
+</div>
+<div class="modal-bg" id="booking-modal">
+  <div class="modal-box">
+    <div style="font-size:18px;font-weight:800;margin-bottom:4px;">📞 Book Cylinder</div>
+    <div style="font-size:13px;color:#888;margin-bottom:16px;">Tap a number to call</div>
+    <a href="tel:8454955555" style="text-decoration:none;"><div class="card" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;"><div><div style="font-weight:700;color:#333;">🔥 Indane Gas</div><div style="font-size:12px;color:#888;margin-top:2px;">Missed call booking</div></div><div style="color:#FF6B35;font-weight:700;font-size:16px;">8454955555</div></div></a>
+    <a href="tel:9222201122" style="text-decoration:none;"><div class="card" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;"><div><div style="font-weight:700;color:#333;">🔵 HP Gas</div><div style="font-size:12px;color:#888;margin-top:2px;">Missed call booking</div></div><div style="color:#FF6B35;font-weight:700;font-size:16px;">9222201122</div></div></a>
+    <a href="tel:7715012345" style="text-decoration:none;"><div class="card" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;"><div><div style="font-weight:700;color:#333;">🟢 Bharat Gas</div><div style="font-size:12px;color:#888;margin-top:2px;">Missed call booking</div></div><div style="color:#FF6B35;font-weight:700;font-size:16px;">7715012345</div></div></a>
+    <button class="outline-btn" onclick="closeBooking()">Close</button>
+  </div>
+</div>
+<script>
+const CYLINDER_G=14200,FAMILY_DAYS={1:65,2:48,3:38,4:32,5:27,6:23,7:20,8:17};
+const ACTIVITIES=[{id:'tea',icon:'☕',label:'चाय / Tea',g:15,color:'#8B4513'},{id:'breakfast',icon:'🍳',label:'नाश्ता / Breakfast',g:55,color:'#FF8C00'},{id:'lunch',icon:'🍛',label:'दोपहर / Lunch',g:130,color:'#228B22'},{id:'dinner',icon:'🌙',label:'रात / Dinner',g:160,color:'#4B0082'},{id:'extra',icon:'🔥',label:'अतिरिक्त / Extra',g:50,color:'#DC143C'}];
+let state={screen:'onboard',familySize:4,cylinder:null,todayLog:[],history:[]};
+function save(){try{localStorage.setItem('cs',JSON.stringify(state));}catch(e){}}
+function load(){try{const s=JSON.parse(localStorage.getItem('cs'));if(s)state=s;}catch(e){}}
+load();
+function estDays(){return FAMILY_DAYS[Math.min(state.familySize,8)]||32;}
+function calcGas(){if(!state.cylinder)return{pct:0,daysLeft:0};const days=Math.max(0,Math.floor((Date.now()-new Date(state.cylinder.start))/86400000));const daily=CYLINDER_G/estDays();const logG=state.todayLog.reduce((s,id)=>s+(ACTIVITIES.find(a=>a.id===id)?.g||0),0);const consumed=Math.max(0,(days-1)*daily+(state.todayLog.length>0?logG:daily));const pct=Math.max(0,Math.round(((CYLINDER_G-consumed)/CYLINDER_G)*100));const daysLeft=Math.max(0,Math.round((CYLINDER_G-consumed)/daily));return{pct,daysLeft};}
+function gasColor(pct){return pct>30?'#4CAF50':pct>15?'#FF9800':'#F44336';}
+function render(){const fc=document.getElementById('family-chips');if(fc){fc.innerHTML='';for(let n=1;n<=8;n++){const d=document.createElement('div');d.className='num-chip'+(state.familySize===n?' on':'');d.textContent=n+(n===8?'+':'');d.onclick=()=>{state.familySize=n;save();render();};fc.appendChild(d);}document.getElementById('est-days-text').textContent='Estimated cylinder life: ~'+estDays()+' days';}const fcs=document.getElementById('family-chips-settings');if(fcs){fcs.innerHTML='';for(let n=1;n<=8;n++){const d=document.createElement('div');d.className='num-chip'+(state.familySize===n?' on':'');d.textContent=n+(n===8?'+':'');d.onclick=()=>{state.familySize=n;save();render();};fcs.appendChild(d);}document.getElementById('settings-est-days').textContent='Estimated cylinder life: ~'+estDays()+' days';}if(state.cylinder){const{pct,daysLeft}=calcGas();const col=gasColor(pct);const gp=document.getElementById('gauge-pct');if(gp){gp.textContent=pct+'%';gp.style.color=col;}const gb=document.getElementById('gauge-badge');if(gb){gb.textContent=daysLeft+' दिन / days';gb.style.color=col;gb.style.borderColor=col;gb.style.backgroundColor=col+'22';}const gbar=document.getElementById('gauge-bar');if(gbar){gbar.style.width=pct+'%';gbar.style.background=col;}const urgency=pct>30?'safe':pct>15?'low':'critical';const msgs={safe:'✅ Gas level is good',low:'⚠️ Gas running low — book soon',critical:'🚨 Gas almost empty! Book now'};const bgColors={safe:'#E8F5E9',low:'#FFF3E0',critical:'#FFEBEE'};const um=document.getElementById('urgency-msg');if(um)um.textContent=msgs[urgency];const uc=document.getElementById('urgency-card');if(uc)uc.style.background=bgColors[urgency];const sd=document.getElementById('cylinder-start-date');if(sd)sd.textContent=new Date(state.cylinder.start).toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'});document.getElementById('home-no-cylinder').style.display='none';document.getElementById('home-cylinder').style.display='block';}else{const hnc=document.getElementById('home-no-cylinder');if(hnc)hnc.style.display='block';const hc=document.getElementById('home-cylinder');if(hc)hc.style.display='none';}const td=document.getElementById('today-date');if(td)td.textContent=new Date().toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long'});const ag=document.getElementById('activity-grid');if(ag){ag.innerHTML='';ACTIVITIES.forEach(a=>{const on=state.todayLog.includes(a.id);const d=document.createElement('div');d.className='act-card';d.style.borderColor=on?a.color:'#FFD9B3';d.style.backgroundColor=on?a.color+'18':'#FFF';d.innerHTML=`<span class="act-icon">${a.icon}</span><div class="act-name" style="color:${on?a.color:'#555'};font-weight:${on?700:500}">${a.label.split('/')[0].trim()}</div><div class="act-g">~${a.g}g LPG</div>`;d.onclick=()=>{state.todayLog=on?state.todayLog.filter(x=>x!==a.id):[...state.todayLog,a.id];save();render();};ag.appendChild(d);});const total=state.todayLog.reduce((s,id)=>s+(ACTIVITIES.find(a=>a.id===id)?.g||0),0);const ub=document.getElementById('usage-box');if(ub)ub.style.display=state.todayLog.length>0?'block':'none';const ug=document.getElementById('usage-g');if(ug)ug.textContent=total+'g LPG';}const hl=document.getElementById('history-list');const he=document.getElementById('history-empty');const ch=document.getElementById('curr-cylinder-hist');if(ch){if(state.cylinder){const dr=Math.floor((Date.now()-new Date(state.cylinder.start))/86400000);ch.innerHTML=`<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;"><div style="font-size:15px;font-weight:700;color:#333;">Current Cylinder</div><div style="background:#FF6B35;border-radius:8px;padding:2px 8px;color:#FFF;font-size:11px;font-weight:700;">Active</div></div><div style="color:#888;margin-top:4px;">📅 Started: ${new Date(state.cylinder.start).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'})}</div><div style="color:#4CAF50;font-weight:600;margin-top:4px;">⏱ ${dr} days running</div></div>`;}else ch.innerHTML='';}if(hl){hl.innerHTML='';state.history.forEach((c,i)=>{const days=Math.round((new Date(c.end)-new Date(c.start))/86400000);hl.innerHTML+=`<div class="card hist-card"><div class="hist-bar"></div><div style="flex:1;"><div style="font-weight:700;font-size:14px;color:#333;">Cylinder #${state.history.length-i}</div><div style="color:#888;font-size:13px;margin-top:2px;">📅 ${new Date(c.start).toLocaleDateString('en-IN',{day:'numeric',month:'short'})} → ${new Date(c.end).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'})}</div><div style="color:${days>=30?'#4CAF50':'#FF9800'};font-weight:600;margin-top:2px;">⏱ ${days} days</div></div></div>`;});}if(he)he.style.display=(state.history.length===0&&!state.cylinder)?'block':'none';}
+function goto(sc){if(sc==='onboard')return;document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));document.getElementById('screen-'+sc).classList.add('active');const ni=document.getElementById('nav-'+sc);if(ni)ni.classList.add('active');state.screen=sc;save();render();}
+function goHome(){state.screen='home';save();goto('home');}
+function startCylinder(){state.cylinder={start:new Date().toISOString(),brand:'Indane'};state.todayLog=[];save();goto('home');}
+function emptyCylinder(){if(confirm('सिलेंडर खत्म? / Is cylinder empty?')){state.history=[{...state.cylinder,end:new Date().toISOString()},...state.history];state.cylinder=null;state.todayLog=[];save();render();}}
+function openTypeModal(){document.getElementById('type-input').value='';document.getElementById('type-modal').classList.add('open');setTimeout(()=>document.getElementById('type-input').focus(),300);}
+function closeTypeModal(){document.getElementById('type-modal').classList.remove('open');}
+function submitType(){const val=document.getElementById('type-input').value.toLowerCase();const found=ACTIVITIES.filter(a=>val.includes(a.id)||val.includes(a.label.split('/')[0].trim().toLowerCase())||val.includes(a.label.split('/')[1].trim().toLowerCase()));if(found.length)state.todayLog=found.map(a=>a.id);closeTypeModal();save();render();}
+function showBooking(){document.getElementById('booking-modal').classList.add('open');}
+function closeBooking(){document.getElementById('booking-modal').classList.remove('open');}
+document.getElementById('type-modal').addEventListener('click',function(e){if(e.target===this)closeTypeModal();});
+document.getElementById('booking-modal').addEventListener('click',function(e){if(e.target===this)closeBooking();});
+if(state.screen&&state.screen!=='onboard'){goto(state.screen);}else{render();}
+</script>
+</body>
+</html>
