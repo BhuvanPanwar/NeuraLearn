@@ -1,15 +1,17 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import {
   View, Text, TouchableOpacity, ScrollView,
-  StyleSheet, SafeAreaView, Alert, TextInput,
+  StyleSheet, SafeAreaView, Alert, TextInput, Platform,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import * as Speech from 'expo-speech';
+import Voice from '@react-native-voice/voice';
 
 import { getStrings } from '../constants/languages';
 import { ACTIVITY_CONFIG, CONSUMPTION_PER_ACTIVITY } from '../constants/gasProfiles';
 import { saveDayLog, getDayLog } from '../utils/storage';
-import { todayKey, getDateKey } from '../utils/gasCalculator';
+import { todayKey } from '../utils/gasCalculator';
+import { pushDayLogToCloud } from '../services/syncService';
 
 // Simple voice command parser — maps spoken words to activity IDs
 function parseVoiceToActivities(text, lang) {
@@ -34,21 +36,41 @@ export default function DailyLogScreen({ route }) {
   const lang = route?.params?.lang || 'hi';
   const t    = getStrings(lang);
 
-  const [selected,   setSelected]   = useState([]);
-  const [note,       setNote]       = useState('');
-  const [saved,      setSaved]      = useState(false);
-  const [isListening, setListening] = useState(false);
-  const [voiceText,  setVoiceText]  = useState('');
+  const [selected,    setSelected]   = useState([]);
+  const [note,        setNote]       = useState('');
+  const [saved,       setSaved]      = useState(false);
+  const [isListening, setListening]  = useState(false);
+  const [voiceText,   setVoiceText]  = useState('');
 
-  const dateKey   = todayKey();
-  const todayStr  = new Date().toLocaleDateString(lang === 'hi' ? 'hi-IN' : 'en-IN', {
+  const dateKey  = todayKey();
+  const todayStr = new Date().toLocaleDateString(lang === 'hi' ? 'hi-IN' : 'en-IN', {
     weekday: 'long', day: 'numeric', month: 'long',
   });
+
+  // Wire up react-native-voice listeners
+  useEffect(() => {
+    Voice.onSpeechStart   = () => setListening(true);
+    Voice.onSpeechEnd     = () => setListening(false);
+    Voice.onSpeechError   = () => { setListening(false); setVoiceText(''); };
+    Voice.onSpeechResults = (e) => {
+      const text = e.value?.[0] || '';
+      setVoiceText(text);
+      const activities = parseVoiceToActivities(text, lang);
+      if (activities.length > 0) setSelected(activities);
+    };
+    return () => {
+      Voice.destroy().then(Voice.removeAllListeners);
+    };
+  }, [lang]);
 
   useFocusEffect(
     useCallback(() => {
       loadTodayLog();
       setSaved(false);
+      return () => {
+        // Stop listening when screen loses focus
+        Voice.stop().catch(() => {});
+      };
     }, [])
   );
 
@@ -71,29 +93,33 @@ export default function DailyLogScreen({ route }) {
   }
 
   async function handleSave() {
-    await saveDayLog(dateKey, { activities: selected, note });
+    const log = { activities: selected, note };
+    await saveDayLog(dateKey, log);
+    pushDayLogToCloud(dateKey, log).catch(() => {}); // non-blocking cloud sync
     setSaved(true);
-    // Speak confirmation in the selected language
     Speech.speak(
       lang === 'hi' ? 'खाना लॉग हो गया!' : 'Cooking logged!',
       { language: lang === 'hi' ? 'hi-IN' : 'en-IN', rate: 1.0 }
     );
   }
 
-  // Simulated voice recognition (real impl uses expo-speech or react-native-voice)
-  function handleVoice() {
-    if (isListening) return;
-    setListening(true);
-    setVoiceText(t.listening);
-    // In production, use Voice.start() from react-native-voice here.
-    // For skeleton, simulate after 2s:
-    setTimeout(() => {
-      const simulated = lang === 'hi' ? 'आज चाय नाश्ता और दोपहर का खाना बनाया' : 'I made tea breakfast and lunch today';
-      setVoiceText(simulated);
-      const activities = parseVoiceToActivities(simulated, lang);
-      setSelected(activities);
+  async function handleVoice() {
+    if (isListening) {
+      await Voice.stop();
+      return;
+    }
+    try {
+      setVoiceText(t.listening);
+      // Use Hindi locale for hi, else Indian English
+      const locale = lang === 'hi' ? 'hi-IN' : 'en-IN';
+      await Voice.start(locale);
+    } catch (e) {
       setListening(false);
-    }, 2000);
+      Alert.alert(
+        lang === 'hi' ? 'माइक्रोफ़ोन की अनुमति चाहिए' : 'Microphone permission needed',
+        lang === 'hi' ? 'सेटिंग्स में माइक्रोफ़ोन चालू करें' : 'Enable microphone in Settings'
+      );
+    }
   }
 
   // Grams consumed today based on selected activities

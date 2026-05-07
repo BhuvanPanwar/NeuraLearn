@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "LPG Track - गैस ट्रैकर",
-    "slug": "lpgtrack",
+    "name": "CylinderSathi",
+    "slug": "cylindersathi",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -14,11 +14,11 @@
     "assetBundlePatterns": ["**/*"],
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.lpgtrack.app",
+      "bundleIdentifier": "com.cylindersathi.app",
       "infoPlist": {
-        "NSMicrophoneUsageDescription": "Used for voice commands to log cooking activities",
-        "NSCameraUsageDescription": "Used to photograph your cylinder start date sticker",
-        "NSPhotoLibraryUsageDescription": "Used to save cylinder photos"
+        "NSMicrophoneUsageDescription": "बोलकर खाना लॉग करने के लिए माइक्रोफ़ोन चाहिए",
+        "NSCameraUsageDescription": "सिलेंडर की तारीख का फोटो लेने के लिए कैमरा चाहिए",
+        "NSPhotoLibraryUsageDescription": "सिलेंडर की फोटो सहेजने के लिए"
       }
     },
     "android": {
@@ -26,14 +26,17 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#FF6B35"
       },
-      "package": "com.lpgtrack.app",
+      "package": "com.cylindersathi.app",
+      "googleServicesFile": "./google-services.json",
       "permissions": [
         "RECORD_AUDIO",
         "CAMERA",
         "READ_EXTERNAL_STORAGE",
         "WRITE_EXTERNAL_STORAGE",
         "RECEIVE_BOOT_COMPLETED",
-        "VIBRATE"
+        "VIBRATE",
+        "USE_BIOMETRIC",
+        "USE_FINGERPRINT"
       ]
     },
     "plugins": [
@@ -44,7 +47,20 @@
           "color": "#FF6B35",
           "sounds": []
         }
+      ],
+      "@react-native-google-signin/google-signin",
+      [
+        "react-native-google-mobile-ads",
+        {
+          "androidAppId": "ca-app-pub-XXXXXXXXXXXXXXXX~XXXXXXXXXX",
+          "iosAppId":     "ca-app-pub-XXXXXXXXXXXXXXXX~XXXXXXXXXX"
+        }
       ]
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "YOUR_EAS_PROJECT_ID"
+      }
+    }
   }
 }

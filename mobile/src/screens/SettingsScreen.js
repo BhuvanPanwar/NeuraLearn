@@ -4,6 +4,7 @@ import {
   StyleSheet, SafeAreaView, Alert, Switch,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
+import auth from '@react-native-firebase/auth';
 
 import { SUPPORTED_LANGUAGES, getStrings } from '../constants/languages';
 import { COOKING_STYLES } from '../constants/gasProfiles';
@@ -12,6 +13,7 @@ import {
   scheduleDailyReminder, cancelDailyReminder,
   sendTestNotification, requestNotificationPermission,
 } from '../utils/notifications';
+import { pushProfileToCloud } from '../services/syncService';
 
 const REMINDER_HOURS = [
   { label: '7:00 AM', value: 7 },
@@ -54,6 +56,8 @@ export default function SettingsScreen({ route, navigation }) {
       reminderHour, updatedAt: new Date().toISOString(),
     };
     await saveUserProfile(profile);
+    // Mirror to cloud if signed in
+    pushProfileToCloud(profile).catch(() => {});
 
     if (notifEnabled) {
       await requestNotificationPermission();
@@ -65,7 +69,6 @@ export default function SettingsScreen({ route, navigation }) {
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
 
-    // If language changed, update nav params
     if (navigation && navigation.setParams) {
       navigation.setParams({ lang });
     }
@@ -183,9 +186,12 @@ export default function SettingsScreen({ route, navigation }) {
           )}
         </View>
 
+        {/* Account / Cloud Sync */}
+        <AccountSection lang={lang} navigation={navigation} />
+
         {/* App info */}
         <View style={styles.infoCard}>
-          <Text style={styles.infoText}>LPG Track v1.0.0</Text>
+          <Text style={styles.infoText}>CylinderSathi v1.0.0</Text>
           <Text style={styles.infoText}>
             {lang === 'hi'
               ? '🇮🇳 भारत के 30 करोड़ घरों के लिए बनाया गया'
@@ -205,6 +211,67 @@ export default function SettingsScreen({ route, navigation }) {
         </Text>
       </TouchableOpacity>
     </SafeAreaView>
+  );
+}
+
+function AccountSection({ lang, navigation }) {
+  const user = auth().currentUser;
+
+  async function handleSignOut() {
+    Alert.alert(
+      lang === 'hi' ? 'साइन आउट करें?' : 'Sign out?',
+      lang === 'hi' ? 'आपका डेटा फोन पर सुरक्षित रहेगा।' : 'Your data stays on this phone.',
+      [
+        { text: lang === 'hi' ? 'रद्द करें' : 'Cancel', style: 'cancel' },
+        { text: lang === 'hi' ? 'साइन आउट' : 'Sign Out', style: 'destructive',
+          onPress: () => auth().signOut() },
+      ]
+    );
+  }
+
+  return (
+    <View style={styles.section}>
+      <Text style={styles.sectionTitle}>☁️ {lang === 'hi' ? 'अकाउंट और सिंक' : 'Account & Sync'}</Text>
+      {user ? (
+        <>
+          <View style={styles.accountRow}>
+            <Text style={styles.accountIcon}>✅</Text>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.accountLabel}>
+                {lang === 'hi' ? 'लॉग इन है' : 'Signed in'}
+              </Text>
+              <Text style={styles.accountPhone}>{user.phoneNumber}</Text>
+            </View>
+          </View>
+          <Text style={styles.syncNote}>
+            {lang === 'hi'
+              ? '☁️ आपका डेटा क्लाउड पर सिंक होता है'
+              : '☁️ Your data syncs to the cloud'}
+          </Text>
+          <TouchableOpacity style={styles.signOutBtn} onPress={handleSignOut}>
+            <Text style={styles.signOutText}>
+              {lang === 'hi' ? 'साइन आउट करें' : 'Sign Out'}
+            </Text>
+          </TouchableOpacity>
+        </>
+      ) : (
+        <>
+          <Text style={styles.syncNote}>
+            {lang === 'hi'
+              ? '📵 लॉग इन नहीं है — डेटा सिर्फ इस फोन पर है'
+              : '📵 Not signed in — data only on this phone'}
+          </Text>
+          <TouchableOpacity
+            style={styles.signInBtn}
+            onPress={() => navigation.navigate('Auth', { lang })}
+          >
+            <Text style={styles.signInText}>
+              📱 {lang === 'hi' ? 'OTP से लॉग इन करें' : 'Sign in with OTP'}
+            </Text>
+          </TouchableOpacity>
+        </>
+      )}
+    </View>
   );
 }
 
@@ -249,6 +316,17 @@ const styles = StyleSheet.create({
   timeTextActive:{ color: '#FF6B35', fontWeight: '700' },
   testBtn:       { backgroundColor: '#FFF0E6', borderRadius: 12, padding: 12, alignItems: 'center', borderWidth: 1, borderColor: '#FF6B35' },
   testBtnText:   { color: '#FF6B35', fontWeight: '600', fontSize: 15 },
+
+  // Account
+  accountRow:    { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 8 },
+  accountIcon:   { fontSize: 24 },
+  accountLabel:  { fontSize: 14, color: '#555', fontWeight: '600' },
+  accountPhone:  { fontSize: 15, color: '#333', fontWeight: '700', marginTop: 2 },
+  syncNote:      { fontSize: 13, color: '#888', marginBottom: 12 },
+  signInBtn:     { backgroundColor: '#FF6B35', borderRadius: 12, padding: 14, alignItems: 'center' },
+  signInText:    { color: '#FFF', fontSize: 15, fontWeight: '700' },
+  signOutBtn:    { backgroundColor: '#FFF0E6', borderRadius: 12, padding: 12, alignItems: 'center', borderWidth: 1, borderColor: '#FF6B35' },
+  signOutText:   { color: '#FF6B35', fontSize: 14, fontWeight: '600' },
 
   // Info
   infoCard:      { backgroundColor: '#FFF', borderRadius: 14, padding: 16, alignItems: 'center', borderWidth: 1, borderColor: '#FFD9B3', gap: 4 },

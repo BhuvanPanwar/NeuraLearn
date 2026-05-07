@@ -1,22 +1,24 @@
 import React, { useState, useCallback } from 'react';
 import {
   View, Text, TouchableOpacity, ScrollView,
-  StyleSheet, SafeAreaView, Linking, Alert,
+  StyleSheet, SafeAreaView, Alert,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 
-import GasGauge from '../components/GasGauge';
+import GasGauge    from '../components/GasGauge';
+import BookingSheet from '../components/BookingSheet';
+import AdBanner    from '../components/AdBanner';
 import { getStrings } from '../constants/languages';
-import { BOOKING_INFO } from '../constants/gasProfiles';
 import {
   getUserProfile, getCurrentCylinder, getDailyLogs,
-  addCylinderToHistory, clearCurrentCylinder,
+  addCylinderToHistory, clearCurrentCylinder, getCylinderHistory,
 } from '../utils/storage';
 import {
   getRemainingPercent, getDaysRemaining, getUrgencyLevel,
   getEstimatedCylinderDays, computeHistoricalAverage,
 } from '../utils/gasCalculator';
 import { scheduleLowGasAlert, scheduleBookingReminder } from '../utils/notifications';
+import { pushCurrentCylinderToCloud, pushCylinderHistoryToCloud } from '../services/syncService';
 
 const URGENCY_STYLES = {
   safe:     { bg: '#E8F5E9', border: '#4CAF50', text: '#2E7D32' },
@@ -28,11 +30,12 @@ export default function HomeScreen({ navigation, route }) {
   const lang = route?.params?.lang || 'hi';
   const t    = getStrings(lang);
 
-  const [profile,   setProfile]   = useState(null);
-  const [cylinder,  setCylinder]  = useState(null);
-  const [remaining, setRemaining] = useState(100);
-  const [daysLeft,  setDaysLeft]  = useState(0);
-  const [urgency,   setUrgency]   = useState('safe');
+  const [profile,      setProfile]   = useState(null);
+  const [cylinder,     setCylinder]  = useState(null);
+  const [remaining,    setRemaining] = useState(100);
+  const [daysLeft,     setDaysLeft]  = useState(0);
+  const [urgency,      setUrgency]   = useState('safe');
+  const [showBooking,  setBooking]   = useState(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -49,7 +52,7 @@ export default function HomeScreen({ navigation, route }) {
 
     if (!cyl || !prof) return;
 
-    const history  = []; // would load from storage in full impl
+    const history  = await getCylinderHistory();
     const histAvg  = computeHistoricalAverage(history);
     const estDays  = getEstimatedCylinderDays(prof.familySize, prof.cookingStyle, histAvg);
     const remPct   = getRemainingPercent(cyl.startDate, logs, estDays);
@@ -76,8 +79,10 @@ export default function HomeScreen({ navigation, route }) {
         {
           text: lang === 'hi' ? 'हाँ, खत्म हुआ' : 'Yes, Finished',
           onPress: async () => {
-            await addCylinderToHistory({ ...cylinder, endDate: new Date().toISOString() });
+            const finished = { ...cylinder, endDate: new Date().toISOString() };
+            await addCylinderToHistory(finished);
             await clearCurrentCylinder();
+            pushCylinderHistoryToCloud(finished).catch(() => {});
             setCylinder(null);
             setRemaining(0);
             setDaysLeft(0);
@@ -88,17 +93,7 @@ export default function HomeScreen({ navigation, route }) {
   }
 
   function handleBookNow() {
-    const brand   = cylinder?.brand || 'other';
-    const info    = BOOKING_INFO[brand] || BOOKING_INFO.other;
-    const phone   = info.phone;
-    if (phone) {
-      Linking.openURL(`tel:${phone}`);
-    } else {
-      Alert.alert(
-        lang === 'hi' ? 'बुकिंग' : 'Booking',
-        lang === 'hi' ? 'अपने गैस एजेंसी से संपर्क करें।' : 'Please contact your gas agency.'
-      );
-    }
+    setBooking(true);
   }
 
   const urgStyle = URGENCY_STYLES[urgency];
@@ -115,8 +110,8 @@ export default function HomeScreen({ navigation, route }) {
         {/* Header */}
         <View style={styles.header}>
           <View>
-            <Text style={styles.appName}>LPG Track</Text>
-            <Text style={styles.subName}>🇮🇳 गैस ट्रैकर</Text>
+            <Text style={styles.appName}>CylinderSathi</Text>
+            <Text style={styles.subName}>🇮🇳 आपका गैस साथी</Text>
           </View>
           <TouchableOpacity
             style={styles.newCylBtn}
@@ -202,7 +197,19 @@ export default function HomeScreen({ navigation, route }) {
           </TouchableOpacity>
         )}
 
+        {/* Ad Banner */}
+        <AdBanner />
+
       </ScrollView>
+
+      {/* Booking bottom sheet */}
+      <BookingSheet
+        visible={showBooking}
+        brand={cylinder?.brand || 'indane'}
+        lang={lang}
+        onClose={() => setBooking(false)}
+      />
+
     </SafeAreaView>
   );
 }
