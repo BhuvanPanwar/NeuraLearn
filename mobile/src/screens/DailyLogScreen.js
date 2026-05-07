@@ -1,11 +1,10 @@
-import React, { useState, useCallback, useEffect, useRef } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View, Text, TouchableOpacity, ScrollView,
-  StyleSheet, SafeAreaView, Alert, TextInput, Platform,
+  StyleSheet, SafeAreaView, Alert, TextInput, Modal,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import * as Speech from 'expo-speech';
-import Voice from '@react-native-voice/voice';
 
 import { getStrings } from '../constants/languages';
 import { ACTIVITY_CONFIG, CONSUMPTION_PER_ACTIVITY } from '../constants/gasProfiles';
@@ -38,38 +37,18 @@ export default function DailyLogScreen({ route }) {
   const [selected,    setSelected]   = useState([]);
   const [note,        setNote]       = useState('');
   const [saved,       setSaved]      = useState(false);
-  const [isListening, setListening]  = useState(false);
   const [voiceText,   setVoiceText]  = useState('');
+  const [showVoiceInput, setShowVoiceInput] = useState(false);
 
   const dateKey  = todayKey();
   const todayStr = new Date().toLocaleDateString(lang === 'hi' ? 'hi-IN' : 'en-IN', {
     weekday: 'long', day: 'numeric', month: 'long',
   });
 
-  // Wire up react-native-voice listeners
-  useEffect(() => {
-    Voice.onSpeechStart   = () => setListening(true);
-    Voice.onSpeechEnd     = () => setListening(false);
-    Voice.onSpeechError   = () => { setListening(false); setVoiceText(''); };
-    Voice.onSpeechResults = (e) => {
-      const text = e.value?.[0] || '';
-      setVoiceText(text);
-      const activities = parseVoiceToActivities(text, lang);
-      if (activities.length > 0) setSelected(activities);
-    };
-    return () => {
-      Voice.destroy().then(Voice.removeAllListeners);
-    };
-  }, [lang]);
-
   useFocusEffect(
     useCallback(() => {
       loadTodayLog();
       setSaved(false);
-      return () => {
-        // Stop listening when screen loses focus
-        Voice.stop().catch(() => {});
-      };
     }, [])
   );
 
@@ -101,23 +80,24 @@ export default function DailyLogScreen({ route }) {
     );
   }
 
-  async function handleVoice() {
-    if (isListening) {
-      await Voice.stop();
-      return;
-    }
-    try {
-      setVoiceText(t.listening);
-      // Use Hindi locale for hi, else Indian English
-      const locale = lang === 'hi' ? 'hi-IN' : 'en-IN';
-      await Voice.start(locale);
-    } catch (e) {
-      setListening(false);
+  function handleVoice() {
+    setVoiceText('');
+    setShowVoiceInput(true);
+  }
+
+  function submitVoiceText() {
+    const activities = parseVoiceToActivities(voiceText, lang);
+    if (activities.length > 0) {
+      setSelected(activities);
+    } else {
       Alert.alert(
-        lang === 'hi' ? 'माइक्रोफ़ोन की अनुमति चाहिए' : 'Microphone permission needed',
-        lang === 'hi' ? 'सेटिंग्स में माइक्रोफ़ोन चालू करें' : 'Enable microphone in Settings'
+        lang === 'hi' ? 'कुछ नहीं मिला' : 'Nothing detected',
+        lang === 'hi'
+          ? 'चाय, नाश्ता, दोपहर, रात जैसे शब्द लिखें'
+          : 'Try words like: tea, breakfast, lunch, dinner'
       );
     }
+    setShowVoiceInput(false);
   }
 
   // Grams consumed today based on selected activities
@@ -135,22 +115,48 @@ export default function DailyLogScreen({ route }) {
           </Text>
         </View>
 
-        {/* Voice Button */}
+        {/* Voice / Type Button */}
         <TouchableOpacity
-          style={[styles.voiceBtn, isListening && styles.voiceBtnActive]}
+          style={styles.voiceBtn}
           onPress={handleVoice}
           activeOpacity={0.8}
         >
-          <Text style={styles.voiceBtnIcon}>{isListening ? '🎙️' : '🎤'}</Text>
+          <Text style={styles.voiceBtnIcon}>🎤</Text>
           <View style={{ flex: 1 }}>
             <Text style={styles.voiceBtnLabel}>
-              {isListening ? t.listening : (lang === 'hi' ? 'बोलकर बताएं' : 'Tell us by voice')}
+              {lang === 'hi' ? 'टाइप करके बताएं' : 'Type what you cooked'}
             </Text>
-            <Text style={styles.voiceHint}>
-              {voiceText || t.voiceHint}
-            </Text>
+            <Text style={styles.voiceHint}>{t.voiceHint}</Text>
           </View>
         </TouchableOpacity>
+
+        {/* Voice Text Input Modal */}
+        <Modal visible={showVoiceInput} transparent animationType="slide">
+          <View style={styles.modalBackdrop}>
+            <View style={styles.modalCard}>
+              <Text style={styles.modalTitle}>
+                {lang === 'hi' ? '🎤 आज क्या बनाया?' : '🎤 What did you cook?'}
+              </Text>
+              <TextInput
+                style={styles.voiceModalInput}
+                placeholder={lang === 'hi' ? 'जैसे: चाय नाश्ता और दोपहर का खाना' : 'e.g. tea breakfast and lunch'}
+                placeholderTextColor="#BBB"
+                value={voiceText}
+                onChangeText={setVoiceText}
+                autoFocus
+                multiline
+              />
+              <View style={styles.modalBtns}>
+                <TouchableOpacity style={styles.modalCancelBtn} onPress={() => setShowVoiceInput(false)}>
+                  <Text style={styles.modalCancelText}>{lang === 'hi' ? 'रद्द' : 'Cancel'}</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.modalOkBtn} onPress={submitVoiceText}>
+                  <Text style={styles.modalOkText}>{lang === 'hi' ? 'ठीक है ✓' : 'OK ✓'}</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
 
         {/* Divider */}
         <View style={styles.dividerRow}>
@@ -269,6 +275,17 @@ const styles = StyleSheet.create({
 
   // Note
   noteInput:         { marginTop: 16, backgroundColor: '#FFF', borderRadius: 14, borderWidth: 1, borderColor: '#FFD9B3', padding: 14, fontSize: 15, color: '#333', minHeight: 70 },
+
+  // Voice modal
+  modalBackdrop:     { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
+  modalCard:         { backgroundColor: '#FFF8F0', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, paddingBottom: 40 },
+  modalTitle:        { fontSize: 18, fontWeight: '800', color: '#333', marginBottom: 14 },
+  voiceModalInput:   { backgroundColor: '#FFF', borderRadius: 14, borderWidth: 1.5, borderColor: '#FFD9B3', padding: 14, fontSize: 16, color: '#333', minHeight: 80, marginBottom: 16 },
+  modalBtns:         { flexDirection: 'row', gap: 12 },
+  modalCancelBtn:    { flex: 1, backgroundColor: '#F0F0F0', borderRadius: 12, padding: 14, alignItems: 'center' },
+  modalCancelText:   { fontSize: 15, color: '#666', fontWeight: '600' },
+  modalOkBtn:        { flex: 1, backgroundColor: '#FF6B35', borderRadius: 12, padding: 14, alignItems: 'center' },
+  modalOkText:       { fontSize: 15, color: '#FFF', fontWeight: '700' },
 
   // Save
   saveBtn:           { margin: 20, backgroundColor: '#FF6B35', borderRadius: 16, padding: 18, alignItems: 'center' },
